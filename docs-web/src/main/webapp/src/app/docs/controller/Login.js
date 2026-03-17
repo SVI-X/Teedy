@@ -13,6 +13,7 @@ angular.module('docs').controller('Login', function(Restangular, $scope, $rootSc
 
   // Login as guest
   $scope.loginAsGuest = function() {
+    console.log('loginAsGuest called with admin');
     $scope.user = {
       username: 'guest',
       password: ''
