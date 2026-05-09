@@ -1,6 +1,5 @@
 pipeline {
     agent any
-
     stages {
         stage('Clean') {
             steps {
@@ -27,21 +26,28 @@ pipeline {
                 sh 'mvn jacoco:report'
             }
         }
-        // stage('Javadoc') {
-        //     steps {
-        //         sh 'mvn javadoc:javadoc'
-        //     }
-        // }
+        stage('Javadoc') {
+            steps {
+                sh 'mvn javadoc:javadoc'
+            }
+        }
         stage('Site') {
             steps {
                 sh 'mvn site'
             }
         }
+        stage('Package') {
+            steps {
+                sh 'mvn package -DskipTests'
+            }
+        }
     }
-
     post {
-        success {
-            archiveArtifacts artifacts: 'docs-web/target/*.war, **/target/site/**', allowEmptyArchive: true
+        always {
+            archiveArtifacts artifacts: '**/target/site/**/*.*', fingerprint: true
+            archiveArtifacts artifacts: '**/target/**/*.jar', fingerprint: true
+            archiveArtifacts artifacts: '**/target/**/*.war', fingerprint: true
+            junit '**/target/surefire-reports/*.xml'
         }
     }
 }
