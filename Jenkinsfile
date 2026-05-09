@@ -38,4 +38,10 @@ pipeline {
             }
         }
     }
+
+    post {
+        success {
+            archiveArtifacts artifacts: 'docs-web/target/*.war, **/target/site/**', allowEmptyArchive: true
+        }
+    }
 }
