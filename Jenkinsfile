@@ -33,7 +33,7 @@ pipeline {
         }
         stage('Site') {
             steps {
-                sh 'mvn site:stage'
+                sh 'mvn site site:stage'
             }
         }
         stage('Package') {
