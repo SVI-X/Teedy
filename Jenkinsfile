@@ -44,9 +44,10 @@ pipeline {
     }
     post {
         always {
+            archiveArtifacts artifacts: '**/target/site/jacoco/**/*', fingerprint: true
             archiveArtifacts artifacts: '**/target/site/**/*.*', fingerprint: true
-            archiveArtifacts artifacts: '**/target/**/*.war', fingerprint: true
+            archiveArtifacts artifacts: '**/target/*.war', fingerprint: true
             junit '**/target/surefire-reports/*.xml'
         }
-    }
+}
 }
