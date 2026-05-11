@@ -140,12 +140,20 @@
         <version>3.12.1</version>
         <configuration>
           <relativizeDecorationLinks>false</relativizeDecorationLinks>
+          <stagingDirectory>${session.executionRootDirectory}/target/staging</stagingDirectory>
         </configuration>
         <executions>
           <execution>
             <id>attach-descriptor</id>
             <goals>
               <goal>attach-descriptor</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>stage-for-site</id>
+            <phase>site</phase>
+            <goals>
+              <goal>stage</goal>
             </goals>
           </execution>
         </executions>
@@ -214,7 +222,6 @@
             </configuration>
         </plugin>
         
-        <!-- JaCoCo 报告 - 需要 reportSets 配置 -->
         <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
@@ -227,13 +234,23 @@
                     </reports>
                 </reportSet>
             </reportSets>
+            <configuration>
+              <dataFile>${project.basedir}/target/jacoco.exec</dataFile>
+            </configuration>
         </plugin>
         
-        <!-- Surefire 测试报告 - 这个是你缺少的 -->
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-report-plugin</artifactId>
             <version>${org.apache.maven.plugins.maven-surefire-plugin.version}</version>
+            <configuration>
+              <showSuccess>true</showSuccess>
+              <showPending>true</showPending>
+              <!-- 指定测试结果目录 -->
+              <reportsDirectories>
+                <reportsDirectory>${project.basedir}/target/surefire-reports</reportsDirectory>
+              </reportsDirectories>
+            </configuration>
             <reportSets>
                 <reportSet>
                     <reports>

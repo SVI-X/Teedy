@@ -13,7 +13,7 @@ pipeline {
         }
         stage('Test') {
             steps {
-                sh 'mvn test -Dmaven.test.failure.ignore=true -Dtest=!DocumentDaoTest'
+                sh 'mvn test -Dmaven.test.failure.ignore=true'
             }
         }
         stage('PMD') {
@@ -33,7 +33,7 @@ pipeline {
         }
         stage('Site') {
             steps {
-                sh 'mvn site site:stage'
+                sh 'mvn site'
             }
         }
         stage('Package') {
@@ -44,10 +44,10 @@ pipeline {
     }
     post {
         always {
-            archiveArtifacts artifacts: '**/target/site/jacoco/**/*', fingerprint: true
             archiveArtifacts artifacts: '**/target/site/**/*.*', fingerprint: true
-            archiveArtifacts artifacts: '**/target/*.war', fingerprint: true
+            archiveArtifacts artifacts: '**/target/**/*.jar', fingerprint: true
+            archiveArtifacts artifacts: '**/target/**/*.war', fingerprint: true
             junit '**/target/surefire-reports/*.xml'
         }
-}
+    }
 }
