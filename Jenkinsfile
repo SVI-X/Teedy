@@ -1,53 +1,56 @@
 pipeline {
     agent any
+
+    environment {
+        DOCKER_HUB_CREDENTIALS = credentials('dockerhub_credentials')
+        DOCKER_IMAGE = '2624416562/teedy'
+        DOCKER_TAG = "${env.BUILD_NUMBER}"
+    }
+
     stages {
-        stage('Clean') {
+        stage('Maven Build') {
             steps {
-                sh 'mvn clean'
+                sh 'mvn clean package -DskipTests'
             }
         }
-        stage('Compile') {
+
+        stage('Build Docker Image') {
             steps {
-                sh 'mvn compile'
+                script {
+                    docker.build("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}")
+                }
             }
         }
-        stage('Test') {
+
+        stage('Push to Docker Hub') {
             steps {
-                sh 'mvn test -Dmaven.test.failure.ignore=true -Dtest=!DocumentDaoTest'
+                script {
+                    docker.withRegistry('', env.DOCKER_HUB_CREDENTIALS) {
+                        docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push()
+                        docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push('latest')
+                    }
+                }
             }
         }
-        stage('PMD') {
+
+        stage('Run Three Containers') {
             steps {
-                sh 'mvn pmd:pmd'
-            }
-        }
-        stage('JaCoCo') {
-            steps {
-                sh 'mvn jacoco:report'
-            }
-        }
-        stage('Javadoc') {
-            steps {
-                sh 'mvn javadoc:javadoc'
-            }
-        }
-        stage('Site') {
-            steps {
-                sh 'mvn site'
-            }
-        }
-        stage('Package') {
-            steps {
-                sh 'mvn package -DskipTests'
+                script {
+                    sh 'docker rm -f teedy_8082 teedy_8083 teedy_8084 || true'
+                    docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").run('-d -p 8082:8080 --name teedy_8082')
+                    docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").run('-d -p 8083:8080 --name teedy_8083')
+                    docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").run('-d -p 8084:8080 --name teedy_8084')
+                }
             }
         }
     }
+
     post {
-        always {
-            archiveArtifacts artifacts: '**/target/site/**/*.*', fingerprint: true
-            archiveArtifacts artifacts: '**/target/**/*.jar', fingerprint: true
-            archiveArtifacts artifacts: '**/target/**/*.war', fingerprint: true
-            junit '**/target/surefire-reports/*.xml'
+        success {
+            echo '✅ 成功！三个容器运行在 8082,8083,8084'
+        }
+        failure {
+            echo '❌ 失败，请检查日志'
         }
     }
 }
