@@ -2,62 +2,65 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('dockerhub_credentials')
-        DOCKER_IMAGE = '2624416562/teedy'
-        DOCKER_TAG = "${env.BUILD_NUMBER}"
+        // define environment variable
+        // Jenkins credentials configuration
+        DOCKER_HUB_CREDENTIALS = credentials('dockerhub_credentials') // DockerHub credentials ID store in Jenkins
+        // Docker Hub Repository's name
+        DOCKER_IMAGE = 'xx/teedy-app' // your Docker Hub user name andRepository's name
+        DOCKER_TAG = "${env.BUILD_NUMBER}" // use build number as tag
     }
 
     stages {
-        // Maven 构建 - 保留你原有的
-        stage('Maven Build') {
+        stage('Build') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                checkout scmGit(
+                    branches: [[name: '*/master']],
+                    extensions: [],
+                    userRemoteConfigs: [[url: 'https://github.com/xx/Teedy.git']]
+                // your github Repository
+                )
+                sh 'mvn -B -DskipTests clean package'
             }
         }
 
-        // 构建 Docker 镜像
-        stage('Build Docker Image') {
+        // Building Docker images
+        stage('Building image') {
             steps {
                 script {
+                    // assume Dockerfile locate at root
                     docker.build("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}")
                 }
             }
         }
-
-        // 推送到 Docker Hub
-        stage('Push to Docker Hub') {
+        
+        // Uploading Docker images into Docker Hub
+        stage('Upload image') {
             steps {
                 script {
-                    docker.withRegistry('', env.DOCKER_HUB_CREDENTIALS) {
+                    // sign in Docker Hub
+                    docker.withRegistry('https://registry.hub.docker.com','DOCKER_HUB_CREDENTIALS') {
+                        // push image
                         docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push()
+                        // ：optional: label latest
                         docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push('latest')
                     }
                 }
             }
         }
 
-        // 运行三个容器
-        stage('Run Three Containers') {
+        // Running Docker container
+        stage('Run containers') {
             steps {
                 script {
-                    // 清理旧容器
-                    sh 'docker rm -f teedy_8082 teedy_8083 teedy_8084 || true'
-                    
-                    // 运行三个容器
-                    docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").run('-d -p 8082:8080 --name teedy_8082')
-                    docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").run('-d -p 8083:8080 --name teedy_8083')
-                    docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").run('-d -p 8084:8080 --name teedy_8084')
+                    // stop then remove containers if exists
+                    sh 'docker stop teedy-container-8081 || true'
+                    sh 'docker rm teedy-container-8081 || true'
+                    // run Container
+                    docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").run('--name teedy-container-8081 -d -p 8081:8080')
+                    // Optional: list all teedy-containers
+                    sh 'docker ps --filter "name=teedy-container"'
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            echo '✅ 流水线成功！三个容器运行在 8082,8083,8084'
-        }
-        failure {
-            echo '❌ 流水线失败，请检查日志'
         }
     }
 }
