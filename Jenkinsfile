@@ -8,12 +8,14 @@ pipeline {
     }
 
     stages {
+        // Maven 构建 - 保留你原有的
         stage('Maven Build') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
         }
 
+        // 构建 Docker 镜像
         stage('Build Docker Image') {
             steps {
                 script {
@@ -22,6 +24,7 @@ pipeline {
             }
         }
 
+        // 推送到 Docker Hub
         stage('Push to Docker Hub') {
             steps {
                 script {
@@ -33,10 +36,14 @@ pipeline {
             }
         }
 
+        // 运行三个容器
         stage('Run Three Containers') {
             steps {
                 script {
+                    // 清理旧容器
                     sh 'docker rm -f teedy_8082 teedy_8083 teedy_8084 || true'
+                    
+                    // 运行三个容器
                     docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").run('-d -p 8082:8080 --name teedy_8082')
                     docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").run('-d -p 8083:8080 --name teedy_8083')
                     docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").run('-d -p 8084:8080 --name teedy_8084')
@@ -47,10 +54,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ 成功！三个容器运行在 8082,8083,8084'
+            echo '✅ 流水线成功！三个容器运行在 8082,8083,8084'
         }
         failure {
-            echo '❌ 失败，请检查日志'
+            echo '❌ 流水线失败，请检查日志'
         }
     }
 }
