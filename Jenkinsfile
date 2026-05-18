@@ -2,9 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // 凭证注入为环境变量
-        DOCKER_HUB_CREDENTIALS = credentials('dockerhub_credentials')
-        // Docker Hub 仓库地址（改成你的用户名）
         DOCKER_IMAGE = '2624416562/teedy'
         DOCKER_TAG = "${env.BUILD_NUMBER}"
     }
@@ -28,14 +25,13 @@ pipeline {
         stage('Upload image') {
             steps {
                 script {
-                    docker.withRegistry('https://registry.hub.docker.com', "${DOCKER_HUB_CREDENTIALS}") {
-                        docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push()
-                        docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push('latest')
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub_credentials') {
+                    docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push()
+                    docker.image("${env.DOCKER_IMAGE}:${env.DOCKER_TAG}").push('latest')
                     }
                 }
             }
         }
-
         stage('Run containers') {
             steps {
                 script {
